@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Registro de Tareas</title>
+  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#343a40" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    console.log('HTML loaded, waiting for DOM...');
+    window.addEventListener('error', (e) => {
+      console.error('ERROR DETECTADO:', e.message, e.filename, e.lineno, e.colno);
+    });
+  </script>
+</head>
+
+<body>
+  <!-- Update Notification -->
+  <div id="update-notification" class="update-notification hidden">
+    <div class="update-content">
+      <p>🚀 Nueva versión disponible</p>
+      <button id="restart-btn">Actualizar ahora</button>
+    </div>
+  </div>
+
+  <header>
+    <div class="header-controls">
+      <div>
+        <h2>Registro de Tareas</h2>
+        <p class="header-subtitle">Volante/apoyo máquinas</p>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button id="settings-btn" aria-label="Abrir Configuración">⚙️</button>
+      </div>
+    </div>
+    <img id="header-icon" src="icon-header.png" alt="Icono de cabecera">
+  </header>
+
+  <div class="modo-toggle mb-3" role="tablist">
+    <button role="tab" aria-selected="true" data-vista="actual" class="active"
+      aria-label="Ver vista de hoy">Hoy</button>
+    <button role="tab" aria-selected="false" data-vista="historial" aria-label="Ver historial">Historial</button>
+    <button role="tab" aria-selected="false" data-vista="horas" aria-label="Ver distribución de horas">Horas</button>
+    <button role="tab" aria-selected="false" data-vista="graficas"
+      aria-label="Ver gráficas de productividad">Gráficas</button>
+  </div>
+
+  <section id="vista-actual" class="vista-container active" role="tabpanel">
+    <div class="input-group mb-3">
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="nuevo-puesto-input" placeholder="Nº de puesto"
+        aria-label="Número de puesto" />
+      <button id="add-puesto-btn">Añadir</button>
+    </div>
+    <div class="input-group mb-3">
+      <label for="jornada-minutos-input">Minutos por jornada:</label>
+      <input type="number" id="jornada-minutos-input" aria-label="Minutos por jornada" />
+      <button id="save-jornada-btn">Aplicar</button>
+      <span id="jornada-horas-display" style="margin-left: 10px;"></span>
+    </div>
+    <div id="puestos-container"></div>
+    <h3 class="mt-4">Resumen Diario</h3>
+    <div id="dashboard-container"></div>
+    <h3 class="mt-4">Registro de Hoy</h3>
+    <button id="finalizar-jornada-btn" style="background: #28a745; margin-bottom: 10px;">Finalizar Jornada</button>
+    <button id="clear-today-btn" class="danger">Limpiar Hoy</button>
+    <button id="reset-colors-btn" style="background: #6c757d; margin-left: 10px;">Resetear Colores</button>
+    <div id="log-container"></div>
+  </section>
+
+  <section id="vista-historial" class="vista-container" role="tabpanel" aria-hidden="true">
+    <h3>Historial</h3>
+    <h3>Historial</h3>
+    <div id="hist-completo" role="tabpanel" aria-hidden="false"></div>
+  </section>
+
+  <section id="vista-horas" class="vista-container" role="tabpanel" aria-hidden="true">
+    <h3>Distribución de Horas</h3>
+    <div class="horas-filtros" role="tablist">
+      <button role="tab" aria-selected="true" data-rango="hoy" class="active" aria-label="Filtrar por hoy">Hoy</button>
+      <button role="tab" aria-selected="false" data-rango="ayer" aria-label="Filtrar por ayer">Ayer</button>
+      <button role="tab" aria-selected="false" data-rango="7dias" aria-label="Filtrar por últimos 7 días">Últimos 7
+        días</button>
+      <button role="tab" aria-selected="false" data-rango="mes" aria-label="Filtrar por mes actual">Mes actual</button>
+    </div>
+    <div id="horas-container"></div>
+  </section>
+
+  <section id="vista-graficas" class="vista-container" role="tabpanel" aria-hidden="true">
+    <h3>Análisis de Productividad</h3>
+    <div class="filtros-graficas mb-3" role="tablist">
+      <button role="tab" aria-selected="true" data-periodo="daily" class="active"
+        aria-label="Ver gráficas diarias">Diario</button>
+      <button role="tab" aria-selected="false" data-periodo="weekly"
+        aria-label="Ver gráficas semanales">Semanal</button>
+      <button role="tab" aria-selected="false" data-periodo="biweekly"
+        aria-label="Ver gráficas quincenales">Quincenal</button>
+      <button role="tab" aria-selected="false" data-periodo="monthly"
+        aria-label="Ver gráficas mensuales">Mensual</button>
+    </div>
+    <div style="height: 400px">
+      <canvas id="grafico-puestos"></canvas>
+    </div>
+  </section>
+
+  <!-- Data Safety Section -->
+  <section class="data-actions"
+    style="max-width: 600px; margin: 40px auto; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; text-align: center;">
+    <h3 style="color: var(--primary-navy);">📦 Seguridad de Datos</h3>
+    <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
+      <button id="backup-btn"
+        style="background: var(--primary-navy); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">💾
+        Guardar Copia</button>
+      <button id="restore-btn"
+        style="background: var(--primary-orange); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">📂
+        Restaurar</button>
+      <input type="file" id="restore-input" accept=".json" style="display: none;">
+    </div>
+  </section>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>⚙️ Configuración</h3>
+        <button id="close-settings-btn" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <section class="settings-section">
+          <h4>Tiempos y Colores de Tareas</h4>
+          <div id="tasks-config-container">
+            <!-- Injected via JS -->
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h4>Colores de Puestos</h4>
+          <div id="puestos-config-container"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;">
+            <!-- Injected via JS -->
+          </div>
+        </section>
+        <section class="settings-section">
+          <h4>General</h4>
+          <label>
+            Minutos Jornada:
+            <input type="number" id="config-jornada-minutos" value="465">
+          </label>
+        </section>
+      </div>
+      <div class="modal-footer">
+        <button id="save-settings-btn" class="primary-btn">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="popup" class="popup"></div>
+  <script type="module" src="app.js?v=4"></script>
+</body>
+
+</html>
